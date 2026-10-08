@@ -8,30 +8,25 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuración para permitir conexiones desde tu página web
 app.use(cors()); 
 app.use(express.json()); 
-app.use(express.urlencoded({ extended: true })); // Para entender formularios HTML
+app.use(express.urlencoded({ extended: true })); 
 
-// Inicializamos la Inteligencia Artificial y la Base de Datos
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// Ruta de prueba
 app.get('/', (req, res) => {
     res.json({ estatus: 'Online', mensaje: 'SOP&COM Backend y CRM funcionando al 100%' });
 });
 
-// --- EL NÚCLEO DEL CRM: Ruta que recibe los formularios ---
 app.post('/api/contacto', async (req, res) => {
-    // 1. Recibimos los datos del cliente
     const { nombre, empresa, correo, mensaje } = req.body;
     console.log(`🔔 Nuevo cliente detectado: ${empresa}. Iniciando IA...`);
     
-    // 2. Análisis con Gemini (Inteligencia Artificial)
     let analisisIA = "Análisis pendiente.";
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // CORRECCIÓN 1: Actualizamos el nombre del modelo
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
         const prompt = `
         Eres el director comercial de SOP&COM. Analiza este mensaje de un prospecto: "${mensaje}"
         Devuelve el análisis en 3 líneas exactas:
@@ -46,7 +41,6 @@ app.post('/api/contacto', async (req, res) => {
         console.error("⚠️ Error en IA:", error);
     }
 
-    // 3. Guardar en Base de Datos (Supabase)
     const { data, error: dbError } = await supabase
         .from('prospectos')
         .insert([{ 
@@ -61,11 +55,11 @@ app.post('/api/contacto', async (req, res) => {
     if (dbError) console.error("❌ Error guardando en Supabase: ", dbError);
     else console.log("💾 Prospecto asegurado en el CRM.");
 
-    // 4. Mandar Alerta por Correo a tu bandeja
+    // CORRECCIÓN 2: Puerto seguro 465 y SSL activado para cPanel
     const transporter = nodemailer.createTransport({
         host: 'mail.sopcom.com.mx', 
-        port: 2525,             
-        secure: false,         
+        port: 465,             
+        secure: true,         
         auth: {
             user: 'oscar.lujano@sopcom.com.mx', 
             pass: process.env.EMAIL_PASS
@@ -83,12 +77,10 @@ app.post('/api/contacto', async (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
             console.error("❌ Error enviando correo: ", error);
-            // Si quieres redirigir a una página de error, cambia esta línea
-            return res.status(500).send("Hubo un error. Por favor, intenta de nuevo."); 
+            return res.status(500).json({ estatus: 'Error', mensaje: 'Fallo interno.' });
         } 
         console.log("✅ Alerta enviada a tu correo.");
-        // Redirigimos al usuario a la página de inicio o mostramos un mensaje
-        res.send("<script>alert('Mensaje enviado con éxito. Un consultor te contactará pronto.'); window.location.href='/';</script>");
+        res.json({ estatus: 'Éxito', mensaje: 'Mensaje enviado. Un consultor te contactará pronto.' });
     });
 });
 

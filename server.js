@@ -23,10 +23,8 @@ app.post('/api/contacto', async (req, res) => {
     const { nombre, empresa, correo, mensaje } = req.body;
     console.log(`🔔 Nuevo cliente detectado: ${empresa}. Iniciando IA...`);
     
-    let analisisIA = "Análisis pendiente.";
+   let analisisIA = "Análisis pendiente.";
     try {
-        // CORRECCIÓN 1: Actualizamos el nombre del modelo
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const prompt = `
         Eres el director comercial de SOP&COM. Analiza este mensaje de un prospecto: "${mensaje}"
         Devuelve el análisis en 3 líneas exactas:
@@ -34,11 +32,28 @@ app.post('/api/contacto', async (req, res) => {
         Prioridad: (Alta / Media / Baja)
         Resumen: (Una oración muy breve sobre lo que necesita)
         `;
-        const result = await model.generateContent(prompt);
-        analisisIA = result.response.text();
-        console.log("🧠 Análisis de IA completado.");
+
+        // 🚀 TÁCTICA NUEVA: Petición directa a Google (Sin usar la librería conflictiva)
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+        
+        const googleResponse = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+
+        const resultData = await googleResponse.json();
+        
+        if (resultData.candidates && resultData.candidates.length > 0) {
+            analisisIA = resultData.candidates[0].content.parts[0].text;
+            console.log("🧠 Análisis de IA completado (Vía Directa).");
+        } else {
+            console.error("⚠️ Error de Google (Revisa tu API Key):", resultData);
+        }
     } catch (error) {
-        console.error("⚠️ Error en IA:", error);
+        console.error("⚠️ Error en conexión directa con IA:", error);
     }
 
     const { data, error: dbError } = await supabase

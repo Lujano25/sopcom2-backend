@@ -84,6 +84,32 @@ app.post('/api/contacto', async (req, res) => {
     });
 });
 
+// ==========================================
+// RUTA SECRETA PARA ALIMENTAR EL CRM
+// ==========================================
+app.get('/api/prospectos', async (req, res) => {
+    try {
+        console.log("📊 El CRM está solicitando los datos...");
+        
+        // Extraemos todos los registros de la tabla 'prospectos'
+        const { data, error } = await supabase
+            .from('prospectos')
+            .select('*')
+            .order('id', { ascending: false }); // Muestra los más nuevos primero
+
+        if (error) {
+            throw error;
+        }
+
+        // Enviamos el paquete de datos al frontend
+        res.json({ estatus: 'Éxito', datos: data });
+
+    } catch (error) {
+        console.error("❌ Error extrayendo datos de Supabase:", error);
+        res.status(500).json({ estatus: 'Error', mensaje: 'Fallo al conectar con la base de datos.' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Servidor CRM de SOP&COM encendido en el puerto ${PORT}`);
 });

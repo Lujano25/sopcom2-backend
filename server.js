@@ -26,7 +26,7 @@ app.post('/api/contacto', async (req, res) => {
     let analisisIA = "Análisis pendiente.";
     try {
         // CORRECCIÓN 1: Actualizamos el nombre del modelo
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const prompt = `
         Eres el director comercial de SOP&COM. Analiza este mensaje de un prospecto: "${mensaje}"
         Devuelve el análisis en 3 líneas exactas:

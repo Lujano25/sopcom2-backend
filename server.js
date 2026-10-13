@@ -34,8 +34,8 @@ app.post('/api/contacto', async (req, res) => {
         `;
 
         // 🚀 TÁCTICA NUEVA: Petición directa a Google (Sin usar la librería conflictiva)
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-        
+        // Cambiamos "gemini-1.5-flash" por "gemini-pro"
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
         const googleResponse = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

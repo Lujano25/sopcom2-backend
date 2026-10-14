@@ -33,9 +33,9 @@ let analisisIA = "Análisis pendiente.";
         Resumen: (Una oración muy breve sobre lo que necesita)
         `;
 
-        // Conexión oficial al modelo gemini-2.5-flash autorizado en tu llave
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-        console.log("🔗 Conectando a Gemini 2.5 Flash...");
+        // SOLUCIÓN DEFINITIVA: Ruta oficial estable (v1) con el modelo exigido (3.0-flash)
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+        console.log("🔗 Conectando a Gemini 3.0 Flash en ruta estable v1...");
 
         const googleResponse = await fetch(url, {
             method: 'POST',
@@ -56,7 +56,6 @@ let analisisIA = "Análisis pendiente.";
     } catch (error) {
         console.error("⚠️ Error crítico de conexión con IA:", error.message);
     }
-
     const { data, error: dbError } = await supabase
         .from('prospectos')
         .insert([{ 

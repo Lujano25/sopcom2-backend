@@ -22,37 +22,54 @@ app.post('/api/contacto', async (req, res) => {
     console.log(`🔔 Nuevo cliente detectado: ${empresa}. Iniciando IA...`);
     
     let analisisIA = "Análisis pendiente.";
-    try {
-        const prompt = `
-        Eres el director comercial de SOP&COM. Analiza este mensaje de un prospecto: "${mensaje}"
-        Devuelve el análisis en 3 líneas exactas:
-        Categoría: (Infraestructura / Tecnología / Proyectos / Comercialización)
-        Prioridad: (Alta / Media / Baja)
-        Resumen: (Una oración muy breve sobre lo que necesita)
-        `;
+    const prompt = `
+    Eres el director comercial de SOP&COM. Analiza este mensaje de un prospecto: "${mensaje}"
+    Devuelve el análisis en 3 líneas exactas:
+    Categoría: (Infraestructura / Tecnología / Proyectos / Comercialización)
+    Prioridad: (Alta / Media / Baja)
+    Resumen: (Una oración muy breve sobre lo que necesita)
+    `;
 
-        // SOLUCIÓN DICTADA POR GOOGLE: Usar exactamente gemini-3.8-flash
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-        console.log("🔗 Conectando a Gemini 3.8 Flash...");
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    
+    // SISTEMA DE REINTENTOS AUTOMÁTICOS (Máximo 3 intentos)
+    let intentos = 0;
+    const maxIntentos = 3;
 
-        const googleResponse = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
-        });
+    while (intentos < maxIntentos) {
+        try {
+            console.log(`🔗 Conectando a Gemini 3.8 Flash (Intento ${intentos + 1} de ${maxIntentos})...`);
+            
+            const googleResponse = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
 
-        const resultData = await googleResponse.json();
-        
-        if (resultData.candidates && resultData.candidates.length > 0) {
-            analisisIA = resultData.candidates[0].content.parts[0].text;
-            console.log("🧠 Análisis de IA completado con éxito.");
-        } else {
-            console.error("⚠️ Google rechazó la petición. Detalles:", JSON.stringify(resultData));
+            const resultData = await googleResponse.json();
+            
+            if (googleResponse.ok && resultData.candidates && resultData.candidates.length > 0) {
+                analisisIA = resultData.candidates[0].content.parts[0].text;
+                console.log("🧠 Análisis de IA completado con éxito.");
+                break; // Rompe el ciclo porque ya funcionó
+            } else if (googleResponse.status === 503) {
+                intentos++;
+                console.warn(`⚠️ Google está saturado (Error 503). Esperando 2 segundos antes de reintentar...`);
+                if (intentos < maxIntentos) {
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Pausa de 2 segundos
+                } else {
+                    console.error("❌ Se agotaron los reintentos. Google sigue saturado.");
+                }
+            } else {
+                console.error("⚠️ Google rechazó la petición por otro motivo:", JSON.stringify(resultData));
+                break; // Rompe el ciclo si es un error distinto al 503
+            }
+        } catch (error) {
+            console.error("⚠️ Error crítico de conexión con IA:", error.message);
+            break;
         }
-    } catch (error) {
-        console.error("⚠️ Error crítico de conexión con IA:", error.message);
     }
 
     const { data, error: dbError } = await supabase
@@ -69,7 +86,6 @@ app.post('/api/contacto', async (req, res) => {
     if (dbError) console.error("❌ Error guardando en Supabase: ", dbError);
     else console.log("💾 Prospecto asegurado en el CRM.");
 
-    // CORRECCIÓN 2: Puerto seguro 465 y SSL activado para cPanel
     const transporter = nodemailer.createTransport({
         host: 'mail.sopcom.com.mx', 
         port: 465,             
@@ -98,24 +114,19 @@ app.post('/api/contacto', async (req, res) => {
     });
 });
 
-// ==========================================
-// RUTA SECRETA PARA ALIMENTAR EL CRM
-// ==========================================
 app.get('/api/prospectos', async (req, res) => {
     try {
         console.log("📊 El CRM está solicitando los datos...");
         
-        // Extraemos todos los registros de la tabla 'prospectos'
         const { data, error } = await supabase
             .from('prospectos')
             .select('*')
-            .order('id', { ascending: false }); // Muestra los más nuevos primero
+            .order('id', { ascending: false });
 
         if (error) {
             throw error;
         }
 
-        // Enviamos el paquete de datos al frontend
         res.json({ estatus: 'Éxito', datos: data });
 
     } catch (error) {

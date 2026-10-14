@@ -31,10 +31,30 @@ app.post('/api/contacto', async (req, res) => {
         Resumen: (Una oración muy breve sobre lo que necesita)
         `;
 
-        // CORRECCIÓN: Ruta v1beta para habilitar el modelo 3.0-flash
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-        console.log("🔗 Conectando a Gemini 3.0 Flash en ruta v1beta...");
+        // MÉTODO NUEVO: Autodetección dinámica (Evita el error 404)
+        const urlModelos = `https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`;
+        const resModelos = await fetch(urlModelos);
+        const dataModelos = await resModelos.json();
 
+        let modeloActivo = "models/gemini-1.5-flash"; // Respaldo por defecto
+        
+        if (dataModelos.models) {
+            // Filtramos para encontrar el primer modelo Gemini que soporte generación de texto
+            const modeloDisponible = dataModelos.models.find(m => 
+                m.supportedGenerationMethods && 
+                m.supportedGenerationMethods.includes("generateContent") && 
+                m.name.includes("gemini")
+            );
+            if (modeloDisponible) {
+                modeloActivo = modeloDisponible.name; // Extrae el nombre exacto que Google autoriza
+            }
+        }
+
+        console.log(`🔗 Autodetección exitosa. Conectando a: ${modeloActivo}...`);
+
+        // Construimos la URL inyectando el modelo detectado
+        const url = `https://generativelanguage.googleapis.com/v1beta/${modeloActivo}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+        
         const googleResponse = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -49,7 +69,7 @@ app.post('/api/contacto', async (req, res) => {
             analisisIA = resultData.candidates[0].content.parts[0].text;
             console.log("🧠 Análisis de IA completado con éxito.");
         } else {
-            console.error("⚠️ Google rechazó la petición. Detalles:", JSON.stringify(resultData));
+            console.error("⚠️ Google rechazó la petición final. Detalles:", JSON.stringify(resultData));
         }
     } catch (error) {
         console.error("⚠️ Error crítico de conexión con IA:", error.message);

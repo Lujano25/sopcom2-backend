@@ -26,7 +26,8 @@ app.post('/api/contacto', async (req, res) => {
 let analisisIA = "Análisis pendiente.";
     try {
         // Táctica de diagnóstico: Extraer la lista oficial de modelos permitidos para tu llave
-        const urlModelos = `https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`;
+        // Actualizamos el nombre exactamente a gemini-2.5-flash
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
         const respuestaModelos = await fetch(urlModelos);
         const modelosPermitidos = await respuestaModelos.json();
         

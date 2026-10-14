@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { createClient } = require('@supabase/supabase-js'); 
 
 const app = express();
@@ -12,7 +11,6 @@ app.use(cors());
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 app.get('/', (req, res) => {
@@ -23,7 +21,7 @@ app.post('/api/contacto', async (req, res) => {
     const { nombre, empresa, correo, mensaje } = req.body;
     console.log(`🔔 Nuevo cliente detectado: ${empresa}. Iniciando IA...`);
     
-let analisisIA = "Análisis pendiente.";
+    let analisisIA = "Análisis pendiente.";
     try {
         const prompt = `
         Eres el director comercial de SOP&COM. Analiza este mensaje de un prospecto: "${mensaje}"
@@ -56,6 +54,7 @@ let analisisIA = "Análisis pendiente.";
     } catch (error) {
         console.error("⚠️ Error crítico de conexión con IA:", error.message);
     }
+
     const { data, error: dbError } = await supabase
         .from('prospectos')
         .insert([{ 

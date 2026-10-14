@@ -33,8 +33,11 @@ app.post('/api/contacto', async (req, res) => {
         Resumen: (Una oración muy breve sobre lo que necesita)
         `;
 
-        // 🚀 TÁCTICA NUEVA: Petición directa a Google (Sin usar la librería conflictiva)
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+        // Este rastreador nos dirá en los logs qué ruta exacta está usando Render (ocultando tu llave por seguridad)
+        console.log("🔗 Intentando conectar a:", url.split("key=")[0] + "key=OCULTA");
+
         const googleResponse = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -43,7 +46,7 @@ app.post('/api/contacto', async (req, res) => {
             })
         });
 
-        const resultData = await googleResponse.json();
+        
         
         if (resultData.candidates && resultData.candidates.length > 0) {
             analisisIA = resultData.candidates[0].content.parts[0].text;

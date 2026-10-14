@@ -25,40 +25,18 @@ app.post('/api/contacto', async (req, res) => {
     
 let analisisIA = "Análisis pendiente.";
     try {
-        const prompt = `
-        Eres el director comercial de SOP&COM. Analiza este mensaje de un prospecto: "${mensaje}"
-        Devuelve el análisis en 3 líneas exactas:
-        Categoría: (Infraestructura / Tecnología / Proyectos / Comercialización)
-        Prioridad: (Alta / Media / Baja)
-        Resumen: (Una oración muy breve sobre lo que necesita)
-        `;
-
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-        console.log("🔗 Intentando conectar a:", url.split("key=")[0] + "key=OCULTA");
-
-        const googleResponse = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
-        });
-
-        // Leemos la respuesta de Google
-        const resultData = await googleResponse.json();
+        // Táctica de diagnóstico: Extraer la lista oficial de modelos permitidos para tu llave
+        const urlModelos = `https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`;
+        const respuestaModelos = await fetch(urlModelos);
+        const modelosPermitidos = await respuestaModelos.json();
         
-        // Verificamos si Google envió el análisis correctamente
-        if (resultData.candidates && resultData.candidates.length > 0) {
-            analisisIA = resultData.candidates[0].content.parts[0].text;
-            console.log("🧠 Análisis de IA completado (Vía Directa).");
-        } else {
-            console.error("⚠️ Google rechazó la petición. Detalles:", JSON.stringify(resultData));
-        }
+        // Imprimimos la respuesta exacta de Google en la terminal de Render
+        console.log("🔍 MODELOS AUTORIZADOS PARA ESTA LLAVE:", JSON.stringify(modelosPermitidos, null, 2));
+
     } catch (error) {
-        console.error("⚠️ Error crítico de conexión con IA:", error.message);
+        console.error("⚠️ Error en diagnóstico:", error.message);
     }
 
-    
     const { data, error: dbError } = await supabase
         .from('prospectos')
         .insert([{ 

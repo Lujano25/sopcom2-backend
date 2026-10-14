@@ -34,7 +34,7 @@ let analisisIA = "Análisis pendiente.";
         `;
 
         // Conexión oficial al modelo gemini-2.5-flash autorizado en tu llave
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
         console.log("🔗 Conectando a Gemini 2.5 Flash...");
 
         const googleResponse = await fetch(url, {

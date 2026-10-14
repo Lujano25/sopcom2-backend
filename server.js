@@ -25,17 +25,36 @@ app.post('/api/contacto', async (req, res) => {
     
 let analisisIA = "Análisis pendiente.";
     try {
-        // Táctica de diagnóstico: Extraer la lista oficial de modelos permitidos para tu llave
-        // Actualizamos el nombre exactamente a gemini-2.5-flash
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-        const respuestaModelos = await fetch(urlModelos);
-        const modelosPermitidos = await respuestaModelos.json();
-        
-        // Imprimimos la respuesta exacta de Google en la terminal de Render
-        console.log("🔍 MODELOS AUTORIZADOS PARA ESTA LLAVE:", JSON.stringify(modelosPermitidos, null, 2));
+        const prompt = `
+        Eres el director comercial de SOP&COM. Analiza este mensaje de un prospecto: "${mensaje}"
+        Devuelve el análisis en 3 líneas exactas:
+        Categoría: (Infraestructura / Tecnología / Proyectos / Comercialización)
+        Prioridad: (Alta / Media / Baja)
+        Resumen: (Una oración muy breve sobre lo que necesita)
+        `;
 
+        // Conexión oficial al modelo gemini-2.5-flash autorizado en tu llave
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+        console.log("🔗 Conectando a Gemini 2.5 Flash...");
+
+        const googleResponse = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+
+        const resultData = await googleResponse.json();
+        
+        if (resultData.candidates && resultData.candidates.length > 0) {
+            analisisIA = resultData.candidates[0].content.parts[0].text;
+            console.log("🧠 Análisis de IA completado con éxito.");
+        } else {
+            console.error("⚠️ Google rechazó la petición. Detalles:", JSON.stringify(resultData));
+        }
     } catch (error) {
-        console.error("⚠️ Error en diagnóstico:", error.message);
+        console.error("⚠️ Error crítico de conexión con IA:", error.message);
     }
 
     const { data, error: dbError } = await supabase

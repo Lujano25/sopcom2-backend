@@ -31,28 +31,33 @@ app.post('/api/contacto', async (req, res) => {
         Resumen: (Una oración muy breve sobre lo que necesita)
         `;
 
-        // SOLUCIÓN DEFINITIVA: Ruta oficial estable (v1) con el modelo exigido (3.0-flash)
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-        console.log("🔗 Conectando a Gemini 3.0 Flash en ruta estable v1...");
+        // 🚀 NUEVA CONEXIÓN: API de OpenAI (ChatGPT)
+        const url = 'https://api.openai.com/v1/chat/completions';
+        console.log("🔗 Conectando a ChatGPT (gpt-4o-mini)...");
 
-        const googleResponse = await fetch(url, {
+        const openaiResponse = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
+                model: "gpt-4o-mini", // El modelo más rápido, moderno y económico para este tipo de tareas
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.3 // Temperatura baja para respuestas precisas y estructuradas
             })
         });
 
-        const resultData = await googleResponse.json();
+        const resultData = await openaiResponse.json();
         
-        if (resultData.candidates && resultData.candidates.length > 0) {
-            analisisIA = resultData.candidates[0].content.parts[0].text;
-            console.log("🧠 Análisis de IA completado con éxito.");
+        if (resultData.choices && resultData.choices.length > 0) {
+            analisisIA = resultData.choices[0].message.content;
+            console.log("🧠 Análisis de IA completado con éxito (ChatGPT).");
         } else {
-            console.error("⚠️ Google rechazó la petición. Detalles:", JSON.stringify(resultData));
+            console.error("⚠️ OpenAI rechazó la petición. Detalles:", JSON.stringify(resultData));
         }
     } catch (error) {
-        console.error("⚠️ Error crítico de conexión con IA:", error.message);
+        console.error("⚠️ Error crítico de conexión con OpenAI:", error.message);
     }
 
     const { data, error: dbError } = await supabase

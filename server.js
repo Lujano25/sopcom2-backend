@@ -23,7 +23,7 @@ app.post('/api/contacto', async (req, res) => {
     const { nombre, empresa, correo, mensaje } = req.body;
     console.log(`🔔 Nuevo cliente detectado: ${empresa}. Iniciando IA...`);
     
-   let analisisIA = "Análisis pendiente.";
+let analisisIA = "Análisis pendiente.";
     try {
         const prompt = `
         Eres el director comercial de SOP&COM. Analiza este mensaje de un prospecto: "${mensaje}"
@@ -34,8 +34,6 @@ app.post('/api/contacto', async (req, res) => {
         `;
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-
-        // Este rastreador nos dirá en los logs qué ruta exacta está usando Render (ocultando tu llave por seguridad)
         console.log("🔗 Intentando conectar a:", url.split("key=")[0] + "key=OCULTA");
 
         const googleResponse = await fetch(url, {
@@ -46,18 +44,21 @@ app.post('/api/contacto', async (req, res) => {
             })
         });
 
+        // Leemos la respuesta de Google
+        const resultData = await googleResponse.json();
         
-        
+        // Verificamos si Google envió el análisis correctamente
         if (resultData.candidates && resultData.candidates.length > 0) {
             analisisIA = resultData.candidates[0].content.parts[0].text;
             console.log("🧠 Análisis de IA completado (Vía Directa).");
         } else {
-            console.error("⚠️ Error de Google (Revisa tu API Key):", resultData);
+            console.error("⚠️ Google rechazó la petición. Detalles:", JSON.stringify(resultData));
         }
     } catch (error) {
-        console.error("⚠️ Error en conexión directa con IA:", error); 
+        console.error("⚠️ Error crítico de conexión con IA:", error.message);
     }
 
+    
     const { data, error: dbError } = await supabase
         .from('prospectos')
         .insert([{ 
